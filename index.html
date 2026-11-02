@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080d18">
+<title>Liquidation Radar — Binance Futures</title>
+<style>
+:root{color-scheme:dark;--bg:#080d18;--panel:#101827;--panel2:#0c1422;--line:#223047;--muted:#8b9bb2;--text:#e8eef8;--green:#20d6a0;--red:#ff5574;--blue:#62a9ff;--yellow:#f4c66a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#172843 0%,var(--bg) 55%);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+header{padding:18px 20px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1500px;margin:auto}
+.brand{display:flex;align-items:center;gap:11px}.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#27d9a5,#2587ff);display:grid;place-items:center;color:#06121c;font-weight:900;font-size:18px}.brand h1{font-size:16px;margin:0;letter-spacing:.3px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.status{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:#e3a93c}.dot.live{background:var(--green);box-shadow:0 0 10px #20d6a077}
+main{max-width:1500px;margin:auto;padding:0 20px 28px}.toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:10px 0 14px}
+select,button,input{font:inherit;color:var(--text);background:#111d2e;border:1px solid var(--line);border-radius:9px;padding:9px 12px;outline:none}
+select:focus,button:focus,input:focus{border-color:var(--blue)}button{cursor:pointer}button:hover{background:#1a2a40}.primary{background:#153a43;border-color:#1c6b66}.primary:hover{background:#1a514f}
+.pill{padding:7px 11px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:12px;background:#0d1726}
+.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}.metric,.panel{background:linear-gradient(180deg,#111b2b,#0d1624);border:1px solid var(--line);border-radius:13px}.metric{padding:12px 14px;min-height:78px}.metric label{color:var(--muted);font-size:11px;display:block;margin-bottom:6px}.metric strong{font-size:19px;font-weight:650;letter-spacing:.1px}.metric em{font-size:11px;color:var(--muted);font-style:normal;margin-left:5px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px}.panel{padding:13px;min-width:0}.panelhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.panelhead h2{font-size:13px;margin:0;font-weight:650}.sub{color:var(--muted);font-size:11px}
+#chartWrap{position:relative;width:100%;height:510px;background:#0a1220;border:1px solid #1c2b40;border-radius:9px;overflow:hidden}canvas{display:block;width:100%;height:100%}#chart{touch-action:pan-y}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:10px}.key{display:inline-flex;align-items:center;gap:6px}.swatch{width:12px;height:8px;border-radius:2px}
+.side{display:flex;flex-direction:column;gap:12px}.side .panel{padding:13px}.rowline{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #1d2a3d;font-size:12px}.rowline:last-child{border-bottom:0}.rowline span:first-child{color:var(--muted)}.value{font-variant-numeric:tabular-nums;text-align:right}
+.control{margin:12px 0}.control label{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-bottom:7px}.control input{width:100%;padding:0;accent-color:#55b9ff}
+.note{font-size:11px;color:#a7b5c9;line-height:1.55;background:#101d2d;border:1px solid #263851;border-radius:9px;padding:10px}
+.events{max-height:240px;overflow:auto}.event{display:grid;grid-template-columns:54px 1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid #1d2a3d;font-size:11px}.event:last-child{border:0}.long{color:var(--green)}.short{color:var(--red)}
+footer{color:#71839d;font-size:10px;text-align:center;padding:16px 8px 4px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}#chartWrap{height:440px}}
+@media(max-width:560px){header{padding:14px 13px 8px}main{padding:0 11px 20px}.brand h1{font-size:14px}.status{font-size:10px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.metric{padding:10px;min-height:69px}.metric strong{font-size:16px}.layout{gap:9px}.panel{padding:10px}#chartWrap{height:390px}.side{grid-template-columns:1fr}.toolbar{gap:7px}.toolbar select,.toolbar button{padding:8px 10px;font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand"><div class="logo">L</div><div><h1>LIQUIDATION RADAR</h1><small>BINANCE USDⓈ-M · MODEL ALPHA 0.1</small></div></div>
+ <div class="status"><span id="dot" class="dot"></span><span id="connection">Подключение…</span></div>
+</header>
+<main>
+ <div class="toolbar">
+  <select id="symbol"><option value="BTCUSDT">BTC / USDT</option><option value="ETHUSDT">ETH / USDT</option><option value="SOLUSDT">SOL / USDT</option></select>
+  <select id="range"><option value="1h">1 час</option><option value="4h" selected>4 часа</option><option value="12h">12 часов</option><option value="1d">1 день</option></select>
+  <button id="refresh" class="primary">↻ Обновить</button>
+  <span class="pill">Public API · без ключа</span>
+ </div>
+ <section class="metrics">
+  <div class="metric"><label>MARK PRICE</label><strong id="price">—</strong><em id="priceMove">Binance</em></div>
+  <div class="metric"><label>OPEN INTEREST</label><strong id="oi">—</strong><em id="oiUsd">USDT</em></div>
+  <div class="metric"><label>FUNDING RATE</label><strong id="funding">—</strong><em>текущий</em></div>
+  <div class="metric"><label>LONG / SHORT BIAS*</label><strong id="bias">50 / 50</strong><em>модель</em></div>
+  <div class="metric"><label>ЛИКВИДАЦИИ · 24H STREAM</label><strong id="liq24">—</strong><em id="liqCount">с момента открытия</em></div>
+ </section>
+ <div class="layout">
+  <section class="panel">
+   <div class="panelhead"><h2>КАРТА ПРЕДПОЛАГАЕМЫХ ЛИКВИДАЦИЙ</h2><span class="sub" id="chartCaption">4 часа · USDT</span></div>
+   <div id="chartWrap"><canvas id="chart"></canvas></div>
+   <div class="legend">
+    <span class="key"><i class="swatch" style="background:#ef4968"></i> LONG liquidation estimates</span>
+    <span class="key"><i class="swatch" style="background:#22c99a"></i> SHORT liquidation estimates</span>
+    <span class="key"><i class="swatch" style="background:#f5c86c"></i> Mark price</span>
+   </div>
+  </section>
+  <aside class="side">
+   <section class="panel">
+    <div class="panelhead"><h2>ПАРАМЕТРЫ МОДЕЛИ</h2><span class="sub">изменяемые</span></div>
+    <div class="control"><label><span>Доля LONG в OI*</span><b id="longPct">50%</b></label><input id="longShare" type="range" min="20" max="80" value="50"></div>
+    <div class="control"><label><span>Среднее плечо модели</span><b id="levLabel">20x</b></label><input id="leverage" type="range" min="5" max="100" step="5" value="20"></div>
+    <div class="control"><label><span>Ширина кластера</span><b id="widthLabel">0.35%</b></label><input id="clusterWidth" type="range" min="10" max="100" value="35"></div>
+    <div class="note">* Доля LONG/SHORT не раскрывается Binance через агрегированный OI. Это ручное допущение модели, а не биржевая статистика.</div>
+   </section>
+   <section class="panel">
+    <div class="panelhead"><h2>БЛИЖАЙШИЕ КЛАСТЕРЫ</h2><span class="sub">оценка</span></div>
+    <div id="clusters"><div class="sub">Ожидание данных…</div></div>
+   </section>
+   <section class="panel">
+    <div class="panelhead"><h2>ФАКТИЧЕСКИЕ ЛИКВИДАЦИИ</h2><span class="sub">Binance stream</span></div>
+    <div id="events" class="events"><div class="sub">Ожидание событий…</div></div>
+   </section>
+  </aside>
+ </div>
+ <div class="note" style="margin-top:12px"><b>Ограничения модели.</b> Карта не показывает реальные заявки или точные цены ликвидации аккаунтов. Она распределяет агрегированный Open Interest по условным плечам и использует текущую цену как приближение цены входа. Реальные уровни зависят от входной цены, стороны позиции, режима маржи, maintenance margin, комиссий и обеспечения. События Force Order — уже исполненные принудительные ликвидации; поток Binance не является полным реестром всех позиций.</div>
+ <footer>Liquidation Radar Alpha 0.1 · данные Binance Futures · Только аналитика, не торговая рекомендация.</footer>
+</main>
+<script>
+(() => {
+ const $ = id => document.getElementById(id);
+ const state = {symbol:'BTCUSDT',price:0,oi:0,oiUsd:0,funding:0,klines:[],events:[],ws:null,wsRetry:null,lastPrice:0,change:0};
+ const fmt = (n,d=2) => Number.isFinite(n) ? n.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d}) : '—';
+ const compact = n => {if(!Number.isFinite(n))return '—';let a=Math.abs(n);return a>=1e9?(n/1e9).toFixed(2)+'B':a>=1e6?(n/1e6).toFixed(2)+'M':a>=1e3?(n/1e3).toFixed(2)+'K':fmt(n,2)};
+ const api = 'https://fapi.binance.com';
+ const intervalMap = {'1h':'1m','4h':'5m','12h':'15m','1d':'1h'};
+ const limitMap = {'1h':60,'4h':48,'12h':48,'1d':24};
+ const setStatus = (ok,msg) => {$('dot').className='dot'+(ok?' live':'');$('connection').textContent=msg};
+ async function get(path){const r=await fetch(api+path,{cache:'no-store'});if(!r.ok)throw Error('Binance API '+r.status);return r.json()}
+ async function loadRest(){
+  const s=state.symbol, range=$('range').value;
+  try{
+   const [p,oi,k] = await Promise.all([
+    get('/fapi/v1/premiumIndex?symbol='+s),
+    get('/fapi/v1/openInterest?symbol='+s),
+    get('/fapi/v1/klines?symbol='+s+'&interval='+intervalMap[range]+'&limit='+limitMap[range])
+   ]);
+   state.price=+p.markPrice;state.funding=+p.lastFundingRate;state.oi=+oi.openInterest;
+   state.oiUsd=state.oi*state.price;
+   state.klines=k.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));
+   $('price').textContent=fmt(state.price, state.price<10?4:2);
+   $('oi').textContent=compact(state.oi);
+   $('oiUsd').textContent='≈ $'+compact(state.oiUsd);
+   $('funding').textContent=(state.funding*100).toFixed(4)+'%';
+   $('funding').style.color=state.funding>=0?'var(--green)':'var(--red)';
+   $('chartCaption').textContent=range+' · '+s;
+   render();
+   setStatus(true,'REST обновлён · WebSocket подключается');
+  }catch(e){setStatus(false,'Ошибка API: '+e.message);console.error(e)}
+ }
+ function modelClusters(){
+  if(!state.price||!state.oiUsd)return [];
+  const longShare=+$('longShare').value/100, baseLev=+$('leverage').value;
+  const width=+$('clusterWidth').value/10000;
+  const leverageSet=[5,10,15,20,25,30,40,50,75,100];
+  const weights=leverageSet.map(l=>Math.exp(-Math.abs(Math.log(l/baseLev))*1.15));
+  const sum=weights.reduce((a,b)=>a+b,0);
+  return leverageSet.map((lev,i)=>{
+   const w=weights[i]/sum, distance=1/lev;
+   const maint=0.005;
+   const longPrice=state.price*(1-distance+maint);
+   const shortPrice=state.price*(1+distance-maint);
+   return [
+    {side:'LONG',price:longPrice,amount:state.oiUsd*longShare*w,weight:w,lev,width},
+    {side:'SHORT',price:shortPrice,amount:state.oiUsd*(1-longShare)*w,weight:w,lev,width}
+   ];
+  }).flat();
+ }
+ function draw(){
+  const canvas=$('chart'),wrap=$('chartWrap'),ctx=canvas.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W=wrap.clientWidth,H=wrap.clientHeight;
+  canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0a1220';ctx.fillRect(0,0,W,H);
+  const pad={l:8,r:78,t:16,b:25},cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  if(!state.price){ctx.fillStyle='#91a2bb';ctx.fillText('Ожидание данных Binance…',20,30);return}
+  const span=state.price*( $('range').value==='1h'?.035:$('range').value==='4h'?.055:$('range').value==='12h'?.085:.12);
+  const min=state.price-span/2,max=state.price+span/2;
+  const y=p=>pad.t+(max-p)/(max-min)*ch;
+  const x=i=>pad.l+(i/Math.max(1,state.klines.length-1))*cw;
+  // horizontal price grid and labels
+  ctx.font='10px system-ui';ctx.textAlign='left';
+  for(let i=0;i<=6;i++){let p=max-(max-min)*i/6,yy=y(p);ctx.strokeStyle='#1a2a3e';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke();ctx.fillStyle='#8b9bb2';ctx.fillText(fmt(p,p<10?4:0),W-pad.r+7,yy+3)}
+  // heatmap as horizontal gaussian bands
+  const clusters=modelClusters(),maxAmt=Math.max(...clusters.map(c=>c.amount),1);
+  clusters.forEach(c=>{
+   if(c.price<min||c.price>max)return;
+   const yy=y(c.price),intensity=Math.pow(c.amount/maxAmt,.7);
+   const spread=Math.max(5,ch* c.width/state.price*1.5);
+   const grad=ctx.createLinearGradient(0,yy-spread,0,yy+spread);
+   const rgb=c.side==='LONG'?'255,65,100':'26,213,157';
+   grad.addColorStop(0,`rgba(${rgb},0)`);grad.addColorStop(.5,`rgba(${rgb},${.08+intensity*.58})`);grad.addColorStop(1,`rgba(${rgb},0)`);
+   ctx.fillStyle=grad;ctx.fillRect(pad.l,yy-spread,cw,spread*2);
+   ctx.fillStyle=`rgba(${rgb},${.25+intensity*.55})`;ctx.fillRect(pad.l,yy-1,cw,2);
+  });
+  // candlesticks
+  const ks=state.klines;
+  if(ks.length){let step=cw/ks.length,bw=Math.max(2,Math.min(8,step*.58));ks.forEach((k,i)=>{let xx=pad.l+i*step+step/2,up=k.c>=k.o;ctx.strokeStyle=up?'#20d6a0':'#ff5574';ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(xx,y(k.h));ctx.lineTo(xx,y(k.l));ctx.stroke();let top=y(Math.max(k.o,k.c)),bot=y(Math.min(k.o,k.c));ctx.fillRect(xx-bw/2,top,bw,Math.max(1,bot-top));})}
+  // current mark
+  let py=y(state.price);ctx.setLineDash([5,4]);ctx.strokeStyle='#f4c66a';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(W-pad.r,py);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#f4c66a';ctx.fillRect(W-pad.r+2,py-9,pad.r-4,18);ctx.fillStyle='#111827';ctx.font='bold 10px system-ui';ctx.fillText(fmt(state.price,state.price<10?4:1),W-pad.r+5,py+3);
+  // time axis
+  ctx.fillStyle='#75869e';ctx.font='9px system-ui';ctx.textAlign='left';ctx.fillText('прошлое',pad.l,H-7);ctx.textAlign='right';ctx.fillText('сейчас',W-pad.r,H-7);
+ }
+ function renderClusters(){
+  const clusters=modelClusters().sort((a,b)=>Math.abs(a.price-state.price)-Math.abs(b.price-state.price)).slice(0,6);
+  $('clusters').innerHTML=clusters.map(c=>`<div class="rowline"><span class="${c.side==='LONG'?'long':'short'}">${c.side} · ${c.lev}x</span><span class="value">${fmt(c.price,c.price<10?4:1)}<br><small class="sub">≈ $${compact(c.amount)}</small></span></div>`).join('');
+  $('bias').textContent=$('longShare').value+' / '+(100-+$('longShare').value);
+ }
+ function render(){draw();renderClusters()}
+ function addEvent(e){
+  if(!e||e.e!=='forceOrder'||!e.o)return;
+  const o=e.o;if(o.s!==state.symbol)return;
+  const item={time:Date.now(),side:o.S==='SELL'?'LONG':'SHORT',price:+o.ap||+o.p,qty:+o.q,usd:(+o.ap||+o.p)*(+o.q)};
+  state.events.unshift(item);state.events=state.events.slice(0,35);
+  const total=state.events.reduce((a,x)=>a+x.usd,0);
+  $('liq24').textContent='$'+compact(total);$('liqCount').textContent=state.events.length+' событий с подключения';
+  $('events').innerHTML=state.events.slice(0,15).map(x=>`<div class="event"><span class="sub">${new Date(x.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span><b class="${x.side==='LONG'?'long':'short'}">${x.side}</b><span class="value">$${compact(x.usd)}<br><small class="sub">${fmt(x.price,x.price<10?4:1)}</small></span></div>`).join('');
+ }
+ function connect(){
+  if(state.ws){try{state.ws.close()}catch{}}
+  const s=state.symbol.toLowerCase();
+  const url=`wss://fstream.binance.com/stream?streams=${s}@markPrice@1s/!forceOrder@arr`;
+  try{
+   const ws=new WebSocket(url);state.ws=ws;
+   ws.onopen=()=>setStatus(true,'WebSocket подключён');
+   ws.onmessage=ev=>{try{const d=JSON.parse(ev.data).data;if(d.e==='markPriceUpdate'&&d.s===state.symbol){state.price=+d.p;$('price').textContent=fmt(state.price,state.price<10?4:2);render()}else if(d.e==='forceOrder')addEvent(d)}catch(err){}};
+   ws.onerror=()=>setStatus(false,'WebSocket: ошибка');
+   ws.onclose=()=>{setStatus(false,'Переподключение…');clearTimeout(state.wsRetry);state.wsRetry=setTimeout(connect,4000)};
+  }catch(e){setStatus(false,'WebSocket недоступен')}
+ }
+ function resetEvents(){state.events=[];$('liq24').textContent='—';$('liqCount').textContent='с момента открытия';$('events').innerHTML='<div class="sub">Ожидание событий…</div>'}
+ async function changeSymbol(){state.symbol=$('symbol').value;resetEvents();await loadRest();connect()}
+ $('symbol').addEventListener('change',changeSymbol);
+ $('range').addEventListener('change',loadRest);
+ $('refresh').addEventListener('click',loadRest);
+ ['longShare','leverage','clusterWidth'].forEach(id=>$(id).addEventListener('input',()=>{$('longPct').textContent=$('longShare').value+'%';$('levLabel').textContent=$('leverage').value+'x';$('widthLabel').textContent=(+$('clusterWidth').value/100).toFixed(2)+'%';render()}));
+ window.addEventListener('resize',draw);
+ loadRest();connect();setInterval(loadRest,30000);
+})();
+</script>
+</body>
+</html>
